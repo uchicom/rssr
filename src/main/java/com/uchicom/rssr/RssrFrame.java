@@ -2,29 +2,24 @@
 package com.uchicom.rssr;
 
 import java.awt.Font;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.HashMap;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.Properties;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.ListSelectionModel;
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.Characters;
-import javax.xml.stream.events.StartElement;
-import javax.xml.stream.events.XMLEvent;
+import javax.swing.SwingUtilities;
 
 /**
  * @author uchicom: Shigeki Uchiyama
@@ -33,10 +28,11 @@ import javax.xml.stream.events.XMLEvent;
 public class RssrFrame extends JFrame {
 
 	private JList<Item> list = new JList<>();
-	private final Channel channel = new Channel();
-	private Stack<QName> stack = new Stack<>();
-	private JFrame frame = new JFrame();
 	private JEditorPane editorPane = new JEditorPane();
+	private File configFile = new File("conf/rssr.properties");
+	private Properties config = new Properties();
+
+	private List<Channel> channelList = new ArrayList<Channel>();
 
 	/**
 	 *
@@ -46,13 +42,26 @@ public class RssrFrame extends JFrame {
 		initComponents();
 	}
 
+	private void initProperties() {
+		try (FileInputStream fis = new FileInputStream(configFile);) {
+			config.load(fis);
+		} catch (FileNotFoundException e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		}
+	}
+
 	private void initComponents() {
-		frame.getContentPane().add(new JScrollPane(editorPane));
+		initProperties();
 		editorPane.setEditable(false);
 		editorPane.setContentType("text/html");
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		list.setFont(list.getFont().deriveFont(Font.PLAIN));
-		getContentPane().add(new JScrollPane(list));
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		splitPane.setLeftComponent(new JScrollPane(list));
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		// list.
 		// list.addMouseListener(new MouseAdapter() {
@@ -69,150 +78,88 @@ public class RssrFrame extends JFrame {
 		// });
 
 		list.addListSelectionListener((e) -> {
-//			if (e.getValueIsAdjusting()) {
-				if (e.getLastIndex() >= 0) {
-					editorPane.setText(channel.getItemList().get(e.getLastIndex()).getDescription());
-					editorPane.setCaretPosition(0);
-					frame.setVisible(true);
-				} else {
-					frame.setVisible(false);
+			if (!e.getValueIsAdjusting()) {
+				Item item = list.getSelectedValue();
+				StringBuffer strBuff = new StringBuffer();
+				if (item != null) {
+					strBuff.append("<h1>").append(item.getTitle()).append("</h1><h2>");
+					strBuff.append(
+							Constants.formatter2.format(item.getPubDate().toInstant().atZone(ZoneId.systemDefault())))
+							.append("</h2><p>");
+					if (item.getDescription().contains("<br/>")) {
+						strBuff.append(item.getDescription());
+					} else {
+						strBuff.append(item.getDescription().replaceAll("\n", "<br/>"));
+					}
+					strBuff.append("</p>");
 				}
-//			}
-		});
-
-		// ここから
-		XMLInputFactory factory = XMLInputFactory.newInstance();
-		XMLEventReader r = null;
-		try {
-			URL url = new URL(Constants.RSS_CROWDWORKS);
-			URLConnection con = url.openConnection();
-			con.setRequestProperty("Accept-Encoding", "gzip,deflate,sdch");
-			con.setRequestProperty("Accept-Charset", "UTF-8,*;q=0.5");
-			con.setRequestProperty("Accept-Language", "ja,en-US;q=0.8,en;q=0.6");
-			con.setRequestProperty("User-Agent", "RSSR/1.0");
-			InputStream is = con.getInputStream();
-			r = factory.createXMLEventReader(is, "utf-8");
-			Map<Integer, Handler> handlers = initHandlers();
-			while (r.hasNext()) {
-				XMLEvent e = r.nextEvent();
-				handlers.get(e.getEventType()).handle(e);
+				editorPane.setText(strBuff.toString());
+				editorPane.setCaretPosition(0);
 			}
-			is.close();
-		} catch (MalformedURLException e1) {
-			e1.printStackTrace();
-		} catch (XMLStreamException e1) {
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		channel.getItemList().forEach((item) -> {
-			System.out.println(item.getTitle());
-			System.out.println(item.getLink());
-			System.out.println(item.getDescription());
 		});
-		DefaultListModel<Item> model = new DefaultListModel<>();
-		channel.getItemList().forEach((item) -> {
-			model.addElement(item);
+		splitPane.setRightComponent(new JScrollPane(editorPane));
+		getContentPane().add(splitPane);
+
+		config.entrySet().forEach((e) -> {
+			String key = e.getKey().toString();
+			if (key.endsWith(".url")) {
+				Thread thread = new Thread(new RssRunnable(this, key));
+				thread.setDaemon(true);
+				thread.start();
+			}
 		});
-		list.setModel(model);
 		pack();
 	}
 
-	private Map<Integer, Handler> initHandlers() {
-		Map<Integer, Handler> handlers = new HashMap<Integer, Handler>();
-
-		handlers.put(XMLEvent.START_ELEMENT, (e) -> {
-			QName name2 = new QName("item");
-			QName name = ((StartElement) e).getName();
-			stack.add(name);
-			if (name2.equals(name)) {
-				channel.getItemList().add(new Item());
-			}
-		});
-		handlers.put(XMLEvent.END_ELEMENT, (e) -> {
-			stack.pop();
-		});
-		handlers.put(XMLEvent.ATTRIBUTE, (e) -> {
-		});
-		handlers.put(XMLEvent.CDATA, (e) -> {
-			if (channel.getItemList().isEmpty())
-				return;
-			Characters characters = (Characters) e;
-			if (characters.isWhiteSpace())
-				return;
-			System.out.println(characters.isCData());
-			System.out.println(characters.getData());
-
-			List<Item> list = channel.getItemList();
-			int max = list.size() - 1;
-
-			Item item = list.get(max);
-			switch (stack.peek().getLocalPart()) {
-			case "title":
-				item.setTitle(characters.getData());
-				break;
-			case "link":
-				try {
-					item.setLink(new URL(characters.getData()));
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
-				break;
-			case "description":
-				item.setDescription(characters.getData());
-				break;
-			}
-		});
-		handlers.put(XMLEvent.CHARACTERS, (e) -> {
-			if (channel.getItemList().isEmpty())
-				return;
-			Characters characters = (Characters) e;
-
-			if (characters.isWhiteSpace())
-				return;
-			System.out.println(characters.isCData());
-			System.out.println(characters.getData());
-			List<Item> list = channel.getItemList();
-			int max = list.size() - 1;
-
-			Item item = list.get(max);
-			switch (stack.peek().getLocalPart()) {
-			case "title":
-				item.setTitle(characters.getData());
-				break;
-			case "link":
-				try {
-					item.setLink(new URL(characters.getData()));
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
-				break;
-			case "description":
-				item.setDescription(characters.getData());
-				break;
-			}
-		});
-		handlers.put(XMLEvent.COMMENT, (e) -> {
-		});
-		handlers.put(XMLEvent.DTD, (e) -> {
-		});
-		handlers.put(XMLEvent.END_DOCUMENT, (e) -> {
-		});
-		handlers.put(XMLEvent.ENTITY_DECLARATION, (e) -> {
-		});
-		handlers.put(XMLEvent.ENTITY_REFERENCE, (e) -> {
-		});
-		handlers.put(XMLEvent.NAMESPACE, (e) -> {
-		});
-		handlers.put(XMLEvent.NOTATION_DECLARATION, (e) -> {
-		});
-		handlers.put(XMLEvent.PROCESSING_INSTRUCTION, (e) -> {
-		});
-		handlers.put(XMLEvent.SPACE, (e) -> {
-		});
-		handlers.put(XMLEvent.START_DOCUMENT, (e) -> {
-		});
-
-		return handlers;
+	public String getProperty(String key) {
+		return config.getProperty(key);
 	}
+
+	public void setChannel(Channel channel) {
+		synchronized (this) {
+			Item before = list.getSelectedValue();
+			if (!channelList.contains(channel)) {
+				channelList.add(channel);
+			}
+
+			List<Item> tempList = new ArrayList<>();
+			channelList.forEach((c)-> {
+				c.getItemList().forEach((item) -> {
+					tempList.add(item);
+				});
+			});
+			SwingUtilities.invokeLater(() -> {
+				tempList.sort(new Comparator<Item>() {
+					@Override
+					public int compare(Item o1, Item o2) {
+						if (o1 == null) {
+							if (o2 == null) {
+								return 0;
+							} else {
+								return 1;
+							}
+						} else if (o2 == null) {
+							return -1;
+						}
+						if (o1.getPubDate()==null) {
+							return 1;
+						} else if (o2.getPubDate()==null) {
+							return -1;
+						}
+						return -o1.getPubDate().compareTo(o2.getPubDate());
+					}
+
+				});
+
+				DefaultListModel<Item> model = new DefaultListModel<>();
+				tempList.forEach((i)->{
+					model.addElement(i);
+				});
+				list.setModel(model);
+				list.setSelectedValue(before, true);
+
+			});
+		}
+	}
+
 }
