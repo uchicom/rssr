@@ -28,6 +28,14 @@ public class Item {
 		return description;
 	}
 	public void setDescription(String description) {
-		this.description = description;
+		if (this.description != null) {
+			this.description += description;
+		} else {
+			this.description = description;
+		}
+	}
+
+	public String toString() {
+		return title;
 	}
 }
