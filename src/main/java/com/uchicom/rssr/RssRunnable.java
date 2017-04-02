@@ -145,6 +145,9 @@ public class RssRunnable implements Runnable {
 			case "description":
 				item.setDescription(characters.getData());
 				break;
+			case "guid":
+				item.setGuid(characters.getData());
+				break;
 			case "pubDate":
 				try {
 					item.setPubDate(
@@ -183,6 +186,9 @@ public class RssRunnable implements Runnable {
 				break;
 			case "description":
 				item.setDescription(characters.getData());
+				break;
+			case "guid":
+				item.setGuid(characters.getData());
 				break;
 			case "pubDate":
 				try {

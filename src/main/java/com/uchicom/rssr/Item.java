@@ -10,22 +10,13 @@ import java.util.Date;
  */
 public class Item {
 
-	/* (非 Javadoc)
-	 * @see java.lang.Object#hashCode()
-	 */
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((description == null) ? 0 : description.hashCode());
-		result = prime * result + ((link == null) ? 0 : link.hashCode());
-		result = prime * result + ((pubDate == null) ? 0 : pubDate.hashCode());
-		result = prime * result + ((title == null) ? 0 : title.hashCode());
+		result = prime * result + ((guid == null) ? 0 : guid.hashCode());
 		return result;
 	}
-	/* (非 Javadoc)
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -35,25 +26,10 @@ public class Item {
 		if (getClass() != obj.getClass())
 			return false;
 		Item other = (Item) obj;
-		if (description == null) {
-			if (other.description != null)
+		if (guid == null) {
+			if (other.guid != null)
 				return false;
-		} else if (!description.equals(other.description))
-			return false;
-		if (link == null) {
-			if (other.link != null)
-				return false;
-		} else if (!link.equals(other.link))
-			return false;
-//		if (pubDate == null) {
-//			if (other.pubDate != null)
-//				return false;
-//		} else if (!pubDate.equals(other.pubDate))
-//			return false;
-		if (title == null) {
-			if (other.title != null)
-				return false;
-		} else if (!title.equals(other.title))
+		} else if (!guid.equals(other.guid))
 			return false;
 		return true;
 	}
@@ -61,6 +37,7 @@ public class Item {
 	private URL link;
 	private String description;
 	private Date pubDate;
+	private String guid;
 	public String getTitle() {
 		return title;
 	}
@@ -99,6 +76,12 @@ public class Item {
 	 */
 	public void setPubDate(Date pubDate) {
 		this.pubDate = pubDate;
+	}
+	public String getGuid() {
+		return guid;
+	}
+	public void setGuid(String guid) {
+		this.guid = guid;
 	}
 	public String toString() {
 		return title + pubDate;

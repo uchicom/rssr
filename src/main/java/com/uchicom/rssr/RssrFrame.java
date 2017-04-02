@@ -1,11 +1,18 @@
 // (c) 2017 uchicom
 package com.uchicom.rssr;
 
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,6 +27,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+
+import com.uchicom.wjm.WJMFrame;
 
 /**
  * @author uchicom: Shigeki Uchiyama
@@ -95,6 +104,43 @@ public class RssrFrame extends JFrame {
 				}
 				editorPane.setText(strBuff.toString());
 				editorPane.setCaretPosition(0);
+			}
+		});
+		list.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent me) {
+				if (me.getClickCount() > 1) {
+					if (!list.isSelectionEmpty()) {
+						try {
+							URL link = list.getSelectedValue().getLink();
+							URL url = new URL(link.getProtocol(), link.getHost(), link.getPort(), link.getFile() , new URLStreamHandler() {
+
+								@Override
+								protected int getDefaultPort() {
+									System.out.println("dp:" + super.getDefaultPort());
+									return 80;
+								}
+								@Override
+								protected URLConnection openConnection(URL paramURL) throws IOException {
+									System.out.println("openCon:" + paramURL);
+									URLConnection con = new URL(paramURL.toString()).openConnection();
+//									con.setRequestProperty("Accept-Encoding", "gzip");
+									con.setRequestProperty("Accept-Charset", "UTF-8,*;q=0.5");
+									con.setRequestProperty("Accept-Language", "ja,en-US;q=0.8,en;q=0.6");
+									con.setRequestProperty("User-Agent", "WJM/1.0");
+									return con;
+								}
+
+							});
+							WJMFrame frame = new WJMFrame(url);
+							frame.setPreferredSize(new Dimension(300, 300));
+							frame.setVisible(true);
+						} catch (MalformedURLException e) {
+							// TODO 自動生成された catch ブロック
+							e.printStackTrace();
+						}
+					}
+				}
 			}
 		});
 		splitPane.setRightComponent(new JScrollPane(editorPane));
