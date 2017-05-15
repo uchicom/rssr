@@ -48,10 +48,14 @@ public class RssrFrame extends JFrame {
 	 */
 	public RssrFrame() {
 		super(Constants.NAME);
-		initComponents();
+		initComponents(configFile);
+	}
+	public RssrFrame(File configFile) {
+		super(Constants.NAME);
+		initComponents(configFile);
 	}
 
-	private void initProperties() {
+	private void initProperties(File configFile) {
 		try (FileInputStream fis = new FileInputStream(configFile);) {
 			config.load(fis);
 		} catch (FileNotFoundException e) {
@@ -63,8 +67,8 @@ public class RssrFrame extends JFrame {
 		}
 	}
 
-	private void initComponents() {
-		initProperties();
+	private void initComponents(File configFile) {
+		initProperties(configFile);
 		editorPane.setEditable(false);
 		editorPane.setContentType("text/html");
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
