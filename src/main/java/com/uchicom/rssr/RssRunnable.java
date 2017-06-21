@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import javax.swing.JOptionPane;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -36,6 +37,7 @@ public class RssRunnable implements Runnable {
 	private RssrFrame frame;
 	private String key;
 	private Item temp;
+	private boolean alive = true;
 
 	public RssRunnable(RssrFrame frame, String key) {
 		this.frame = frame;
@@ -48,7 +50,7 @@ public class RssRunnable implements Runnable {
 	 */
 	@Override
 	public void run() {
-		while (true) {
+		while (alive) {
 			// ここから
 			XMLInputFactory factory = XMLInputFactory.newInstance();
 			XMLEventReader r = null;
@@ -58,7 +60,7 @@ public class RssRunnable implements Runnable {
 				con.setRequestProperty("Accept-Encoding", "gzip,deflate,sdch");
 				con.setRequestProperty("Accept-Charset", "UTF-8,*;q=0.5");
 				con.setRequestProperty("Accept-Language", "ja,en-US;q=0.8,en;q=0.6");
-				con.setRequestProperty("User-Agent", "RSSR/1.0");
+				con.setRequestProperty("User-Agent", "RSSR/1.0.1");
 				InputStream is = con.getInputStream();
 				r = factory.createXMLEventReader(is, "utf-8");
 				while (r.hasNext()) {
@@ -72,6 +74,8 @@ public class RssRunnable implements Runnable {
 				e1.printStackTrace();
 			} catch (IOException e1) {
 				e1.printStackTrace();
+				//メッセージは表示したいな
+				JOptionPane.showMessageDialog(frame, e1.getClass().getName() + ":" +  e1.getMessage());
 			}
 			try {
 				Thread.sleep(Constants.UPDATE_SPAN);
@@ -95,7 +99,6 @@ public class RssRunnable implements Runnable {
 			QName name = ((StartElement) e).getName();
 			stack.push(name);
 			if (name2.equals(name)) {
-				System.out.println(key + "item : start");
 				temp = new Item();
 
 			}
@@ -105,7 +108,6 @@ public class RssRunnable implements Runnable {
 			QName name2 = new QName("item");
 			QName name = ((EndElement) e).getName();
 			if (name2.equals(name)) {
-				System.out.println(key + "item : end");
 				boolean exist = false;
 				for (Item item : channel.getItemList()) {
 					if (item.equals(temp)) {
@@ -128,12 +130,10 @@ public class RssRunnable implements Runnable {
 				return;
 
 
-			System.out.println(key + "cdata");
 			Item item = temp;
 			switch (stack.peek().getLocalPart()) {
 			case "title":
 				item.setTitle(characters.getData());
-				System.out.println(characters.getData());
 				break;
 			case "link":
 				try {
@@ -170,12 +170,10 @@ public class RssRunnable implements Runnable {
 			if (characters.isWhiteSpace())
 				return;
 
-			System.out.println(key + "characters");
 			Item item = temp;
 			switch (stack.peek().getLocalPart()) {
 			case "title":
 				item.setTitle(characters.getData());
-				System.out.println(characters.getData());
 				break;
 			case "link":
 				try {
@@ -226,6 +224,14 @@ public class RssRunnable implements Runnable {
 		handlers.put(XMLEvent.START_DOCUMENT, (e) -> {
 		});
 
+	}
+
+	public boolean isAlive() {
+		return alive;
+	}
+
+	public void setAlive(boolean alive) {
+		this.alive = alive;
 	}
 
 }

@@ -2,6 +2,7 @@
 package com.uchicom.rssr;
 
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -10,6 +11,7 @@ import java.util.Date;
  */
 public class Item {
 
+	private SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -84,6 +86,10 @@ public class Item {
 		this.guid = guid;
 	}
 	public String toString() {
-		return title + pubDate;
+		if (pubDate == null) {
+			return title;
+		} else {
+			return title + format.format(pubDate);
+		}
 	}
 }

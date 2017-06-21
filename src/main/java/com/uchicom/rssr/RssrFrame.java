@@ -5,6 +5,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -41,7 +43,9 @@ public class RssrFrame extends JFrame {
 	private File configFile = new File("conf/rssr.properties");
 	private Properties config = new Properties();
 
-	private List<Channel> channelList = new ArrayList<Channel>();
+	private List<Channel> channelList = new ArrayList<>();
+
+	private List<RssRunnable> runnableList = new ArrayList<>();
 
 	/**
 	 *
@@ -72,6 +76,14 @@ public class RssrFrame extends JFrame {
 		editorPane.setEditable(false);
 		editorPane.setContentType("text/html");
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent we) {
+				runnableList.forEach(runnable->{
+					runnable.setAlive(false);
+				});
+			}
+		});
 		list.setFont(list.getFont().deriveFont(Font.PLAIN));
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		splitPane.setLeftComponent(new JScrollPane(list));
@@ -153,7 +165,9 @@ public class RssrFrame extends JFrame {
 		config.entrySet().forEach((e) -> {
 			String key = e.getKey().toString();
 			if (key.endsWith(".url")) {
-				Thread thread = new Thread(new RssRunnable(this, key));
+				RssRunnable runnable = new RssRunnable(this, key);
+				runnableList.add(runnable);
+				Thread thread = new Thread(runnable);
 				thread.setDaemon(true);
 				thread.start();
 			}
