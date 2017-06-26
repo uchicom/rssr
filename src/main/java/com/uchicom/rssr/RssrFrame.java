@@ -3,6 +3,8 @@ package com.uchicom.rssr;
 
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -10,6 +12,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -41,7 +44,7 @@ public class RssrFrame extends JFrame {
 	private JList<Item> list = new JList<>();
 	private JEditorPane editorPane = new JEditorPane();
 	private File configFile = new File("conf/rssr.properties");
-	private Properties config = new Properties();
+	private Properties properties = new Properties();
 
 	private List<Channel> channelList = new ArrayList<>();
 
@@ -59,31 +62,47 @@ public class RssrFrame extends JFrame {
 		initComponents(configFile);
 	}
 
-	private void initProperties(File configFile) {
-		try (FileInputStream fis = new FileInputStream(configFile);) {
-			config.load(fis);
-		} catch (FileNotFoundException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		}
-	}
+
 
 	private void initComponents(File configFile) {
-		initProperties(configFile);
+		initProperties();
+		setWindowPosition(this, Constants.PROP_KEY_WINDOW_RSSR_POSITION);
+		setWindowState(this, Constants.PROP_KEY_WINDOW_RSSR_STATE);
 		editorPane.setEditable(false);
 		editorPane.setContentType("text/html");
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
+
 			@Override
 			public void windowClosing(WindowEvent we) {
 				runnableList.forEach(runnable->{
 					runnable.setAlive(false);
 				});
+				if (RssrFrame.this.getExtendedState() == JFrame.NORMAL) {
+					// 画面の位置を保持する
+					storeWindowPosition(RssrFrame.this, Constants.PROP_KEY_WINDOW_RSSR_POSITION);
+				} else {
+					storeWindowState(RssrFrame.this, Constants.PROP_KEY_WINDOW_RSSR_STATE);
+				}
+				storeProperties();
+			}
+
+		});
+		addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentMoved(ComponentEvent ce) {
+				if (getExtendedState() == JFrame.NORMAL) {
+					storeWindowPosition(RssrFrame.this, Constants.PROP_KEY_WINDOW_RSSR_POSITION);
+				}
+			}
+			@Override
+			public void componentResized(ComponentEvent ce) {
+				if (getExtendedState() == JFrame.NORMAL) {
+					storeWindowPosition(RssrFrame.this, Constants.PROP_KEY_WINDOW_RSSR_POSITION);
+				}
 			}
 		});
+
 		list.setFont(list.getFont().deriveFont(Font.PLAIN));
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		splitPane.setLeftComponent(new JScrollPane(list));
@@ -162,7 +181,7 @@ public class RssrFrame extends JFrame {
 		splitPane.setRightComponent(new JScrollPane(editorPane));
 		getContentPane().add(splitPane);
 
-		config.entrySet().forEach((e) -> {
+		properties.entrySet().forEach((e) -> {
 			String key = e.getKey().toString();
 			if (key.endsWith(".url")) {
 				RssRunnable runnable = new RssRunnable(this, key);
@@ -176,7 +195,7 @@ public class RssrFrame extends JFrame {
 	}
 
 	public String getProperty(String key) {
-		return config.getProperty(key);
+		return properties.getProperty(key);
 	}
 
 	public void setChannel(Channel channel) {
@@ -223,6 +242,89 @@ public class RssrFrame extends JFrame {
 				list.setSelectedValue(before, true);
 
 			});
+		}
+	}
+
+	/**
+	 * 画面の位置をプロパティに設定する。
+	 *
+	 * @param frame
+	 * @param key
+	 */
+	private void storeWindowPosition(JFrame frame, String key) {
+		String value = frame.getLocation().x + Constants.PROP_SPLIT_CHAR + frame.getLocation().y + Constants.PROP_SPLIT_CHAR
+				+ frame.getWidth() + Constants.PROP_SPLIT_CHAR + frame.getHeight() + Constants.PROP_SPLIT_CHAR;
+		properties.setProperty(key, value);
+	}
+	/**
+	 * 画面の位置をプロパティに設定する。
+	 *
+	 * @param frame
+	 * @param key
+	 */
+	private void storeWindowState(JFrame frame, String key) {
+		String value = frame.getState() + Constants.PROP_SPLIT_CHAR
+				+ frame.getExtendedState();
+		properties.setProperty(key, value);
+	}
+
+	/**
+	 * 画面のサイズをプロパティから設定する。
+	 *
+	 * @param frame
+	 * @param key
+	 */
+	public void setWindowPosition(JFrame frame, String key) {
+		if (properties.containsKey(key)) {
+			String initPoint = properties.getProperty(key);
+			String[] points = initPoint.split(Constants.PROP_SPLIT_CHAR);
+			if (points.length > 3) {
+				frame.setLocation(Integer.parseInt(points[0]), Integer.parseInt(points[1]));
+				frame.setPreferredSize(new Dimension(Integer.parseInt(points[2]), Integer.parseInt(points[3])));
+			}
+		}
+	}
+	public void setWindowState(JFrame frame, String key) {
+		if (properties.containsKey(key)) {
+			String initPoint = properties.getProperty(key);
+			String[] points = initPoint.split(Constants.PROP_SPLIT_CHAR);
+			if (points.length > 1) {
+				frame.setState(Integer.parseInt(points[0]));
+				frame.setExtendedState(Integer.parseInt(points[1]));
+			}
+		}
+	}
+
+	/**
+	 *
+	 */
+
+	private void initProperties() {
+		if (Constants.CONF_FILE.exists() && Constants.CONF_FILE.isFile()) {
+			try (FileInputStream fis = new FileInputStream(Constants.CONF_FILE);) {
+				properties.load(fis);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	private void storeProperties() {
+		try {
+			if (!Constants.CONF_FILE.exists()) {
+				Constants.CONF_FILE.getParentFile().mkdirs();
+				Constants.CONF_FILE.createNewFile();
+			}
+			try (FileOutputStream fos = new FileOutputStream(Constants.CONF_FILE);) {
+				properties.store(fos, Constants.APP_NAME + " Ver" + Constants.VERSION);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
