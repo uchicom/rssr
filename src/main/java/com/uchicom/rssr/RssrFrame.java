@@ -17,7 +17,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Properties;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JEditorPane;
@@ -38,7 +37,6 @@ public class RssrFrame extends ResumeFrame {
 
 	private JList<Item> list = new JList<>();
 	private JEditorPane editorPane = new JEditorPane();
-	private Properties properties = new Properties();
 
 	private List<Channel> channelList = new ArrayList<>();
 
@@ -152,7 +150,7 @@ public class RssrFrame extends ResumeFrame {
 		splitPane.setRightComponent(new JScrollPane(editorPane));
 		getContentPane().add(splitPane);
 
-		properties.entrySet().forEach((e) -> {
+		config.entrySet().forEach((e) -> {
 			String key = e.getKey().toString();
 			if (key.endsWith(".url")) {
 				RssRunnable runnable = new RssRunnable(this, key);
@@ -166,7 +164,7 @@ public class RssrFrame extends ResumeFrame {
 	}
 
 	public String getProperty(String key) {
-		return properties.getProperty(key);
+		return config.getProperty(key);
 	}
 
 	public void setChannel(Channel channel) {
