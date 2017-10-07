@@ -26,6 +26,7 @@ import javax.swing.JSplitPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 
+import com.uchicom.rssr.dto.ItemDto;
 import com.uchicom.ui.ResumeFrame;
 import com.uchicom.wjm.WJMFrame;
 
@@ -35,7 +36,7 @@ import com.uchicom.wjm.WJMFrame;
  */
 public class RssrFrame extends ResumeFrame {
 
-	private JList<Item> list = new JList<>();
+	private JList<ItemDto> list = new JList<>();
 	private JEditorPane editorPane = new JEditorPane();
 
 	private List<Channel> channelList = new ArrayList<>();
@@ -92,7 +93,7 @@ public class RssrFrame extends ResumeFrame {
 
 		list.addListSelectionListener((e) -> {
 			if (!e.getValueIsAdjusting()) {
-				Item item = list.getSelectedValue();
+				ItemDto item = list.getSelectedValue();
 				StringBuffer strBuff = new StringBuffer();
 				if (item != null) {
 					strBuff.append("<h1>").append(item.getTitle()).append("</h1><h2>");
@@ -169,21 +170,21 @@ public class RssrFrame extends ResumeFrame {
 
 	public void setChannel(Channel channel) {
 		synchronized (this) {
-			Item before = list.getSelectedValue();
+			ItemDto before = list.getSelectedValue();
 			if (!channelList.contains(channel)) {
 				channelList.add(channel);
 			}
 
-			List<Item> tempList = new ArrayList<>();
+			List<ItemDto> tempList = new ArrayList<>();
 			channelList.forEach((c)-> {
 				c.getItemList().forEach((item) -> {
 					tempList.add(item);
 				});
 			});
 			SwingUtilities.invokeLater(() -> {
-				tempList.sort(new Comparator<Item>() {
+				tempList.sort(new Comparator<ItemDto>() {
 					@Override
-					public int compare(Item o1, Item o2) {
+					public int compare(ItemDto o1, ItemDto o2) {
 						if (o1 == null) {
 							if (o2 == null) {
 								return 0;
@@ -203,7 +204,7 @@ public class RssrFrame extends ResumeFrame {
 
 				});
 
-				DefaultListModel<Item> model = new DefaultListModel<>();
+				DefaultListModel<ItemDto> model = new DefaultListModel<>();
 				tempList.forEach((i)->{
 					model.addElement(i);
 				});

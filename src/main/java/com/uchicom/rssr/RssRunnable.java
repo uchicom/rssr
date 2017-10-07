@@ -20,6 +20,8 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 
+import com.uchicom.rssr.dto.ItemDto;
+
 /**
  * @author uchicom: Shigeki Uchiyama
  *
@@ -30,7 +32,7 @@ public class RssRunnable implements Runnable {
 	private Map<Integer, Handler> handlers = new HashMap<Integer, Handler>();
 	private RssrFrame frame;
 	private String key;
-	private Item item;
+	private ItemDto item;
 	private boolean alive = true;
 
 	public RssRunnable(RssrFrame frame, String key) {
@@ -99,7 +101,7 @@ public class RssRunnable implements Runnable {
 			try {
 				switch (name.getLocalPart()) {
 				case "item":
-					item = new Item();
+					item = new ItemDto();
 					channel.getItemList().add(item);
 					break;
 				case "title":

@@ -1,5 +1,5 @@
 // (c) 2017 uchicom
-package com.uchicom.rssr;
+package com.uchicom.rssr.dto;
 
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -9,7 +9,7 @@ import java.util.Date;
  * @author uchicom: Shigeki Uchiyama
  *
  */
-public class Item {
+public class ItemDto {
 
 	private SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 	@Override
@@ -27,7 +27,7 @@ public class Item {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Item other = (Item) obj;
+		ItemDto other = (ItemDto) obj;
 		if (guid == null) {
 			if (other.guid != null)
 				return false;

@@ -18,6 +18,8 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 
+import com.uchicom.rssr.dto.ItemDto;
+
 /**
  * @author uchicom: Shigeki Uchiyama
  *
@@ -29,7 +31,7 @@ public class RssAccessor {
 	private Map<Integer, Handler> handlers = new HashMap<Integer, Handler>();
 
 	private DateTimeFormatter dateFormatter;
-	private Item item;
+	private ItemDto itemDto;
 
 	public RssAccessor(String dateFormat) {
 		this.dateFormatter = DateTimeFormatter.ofPattern(dateFormat);
@@ -67,46 +69,46 @@ public class RssAccessor {
 			try {
 				switch (name.getLocalPart()) {
 				case "item":
-					item = new Item();
-					channel.getItemList().add(item);
+					itemDto = new ItemDto();
+					channel.getItemList().add(itemDto);
 					break;
 				case "title":
-					if (item == null)
+					if (itemDto == null)
 						break;
 					text = r.getElementText();
-					item.setTitle(text);
+					itemDto.setTitle(text);
 					break;
 				case "link":
-					if (item == null)
+					if (itemDto == null)
 						break;
 					try {
 						text = r.getElementText();
-						item.setLink(new URL(text));
+						itemDto.setLink(new URL(text));
 					} catch (Exception e1) {
 						e1.printStackTrace();
 					}
 					break;
 				case "description":
-					if (item == null)
+					if (itemDto == null)
 						break;
 					text = r.getElementText();
-					item.setDescription(text);
+					itemDto.setDescription(text);
 					break;
 				case "guid":
-					if (item == null)
+					if (itemDto == null)
 						break;
 					text = r.getElementText();
-					item.setGuid(text);
+					itemDto.setGuid(text);
 					break;
 				case "pubDate":
-					if (item == null)
+					if (itemDto == null)
 						break;
 					try {
 						text = r.getElementText();
-						item.setPubDate(Date.from(OffsetDateTime.parse(text, Constants.formatter)
+						itemDto.setPubDate(Date.from(OffsetDateTime.parse(text, Constants.formatter)
 								.truncatedTo(ChronoUnit.SECONDS).toInstant()));
 					} catch (Exception ee) {
-						item.setPubDate(Date.from(OffsetDateTime.parse(text, dateFormatter).toInstant()));
+						itemDto.setPubDate(Date.from(OffsetDateTime.parse(text, dateFormatter).toInstant()));
 					}
 					break;
 				}
@@ -118,7 +120,7 @@ public class RssAccessor {
 		handlers.put(XMLEvent.END_ELEMENT, (e, text) -> {
 			QName name = e.asEndElement().getName();
 			if ("item".equals(name.getLocalPart())) {
-				item = null;
+				itemDto = null;
 			}
 		});
 		handlers.put(XMLEvent.ATTRIBUTE, (e, text) -> {
