@@ -12,16 +12,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 
 import javax.swing.JOptionPane;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.Characters;
-import javax.xml.stream.events.EndElement;
-import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 
 /**
@@ -30,13 +26,11 @@ import javax.xml.stream.events.XMLEvent;
  */
 public class RssRunnable implements Runnable {
 
-	private Stack<QName> stack = new Stack<>();
-
 	private final Channel channel = new Channel();
 	private Map<Integer, Handler> handlers = new HashMap<Integer, Handler>();
 	private RssrFrame frame;
 	private String key;
-	private Item temp;
+	private Item item;
 	private boolean alive = true;
 
 	public RssRunnable(RssrFrame frame, String key) {
@@ -45,7 +39,9 @@ public class RssRunnable implements Runnable {
 		initHandlers();
 	}
 
-	/* (非 Javadoc)
+	/*
+	 * (非 Javadoc)
+	 *
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
@@ -65,7 +61,7 @@ public class RssRunnable implements Runnable {
 				r = factory.createXMLEventReader(is, "utf-8");
 				while (r.hasNext()) {
 					XMLEvent e = r.nextEvent();
-					handlers.get(e.getEventType()).handle(e);
+					handlers.get(e.getEventType()).handle(e, r);
 				}
 				is.close();
 			} catch (MalformedURLException e1) {
@@ -74,8 +70,8 @@ public class RssRunnable implements Runnable {
 				e1.printStackTrace();
 			} catch (IOException e1) {
 				e1.printStackTrace();
-				//メッセージは表示したいな
-				JOptionPane.showMessageDialog(frame, e1.getClass().getName() + ":" +  e1.getMessage());
+				// メッセージは表示したいな
+				JOptionPane.showMessageDialog(frame, e1.getClass().getName() + ":" + e1.getMessage());
 			}
 			try {
 				Thread.sleep(Constants.UPDATE_SPAN);
@@ -87,6 +83,9 @@ public class RssRunnable implements Runnable {
 
 	}
 
+	Handler empty = (e, r) -> {
+	};
+
 	/**
 	 * runnableに持たせて、それぞれでパースの挙動を変更する。
 	 *
@@ -94,135 +93,85 @@ public class RssRunnable implements Runnable {
 	 */
 	private void initHandlers() {
 
-		handlers.put(XMLEvent.START_ELEMENT, (e) -> {
-			QName name2 = new QName("item");
-			QName name = ((StartElement) e).getName();
-			stack.push(name);
-			if (name2.equals(name)) {
-				temp = new Item();
-
-			}
-		});
-		handlers.put(XMLEvent.END_ELEMENT, (e) -> {
-			stack.pop();
-			QName name2 = new QName("item");
-			QName name = ((EndElement) e).getName();
-			if (name2.equals(name)) {
-				boolean exist = false;
-				for (Item item : channel.getItemList()) {
-					if (item.equals(temp)) {
-						exist = true;
+		handlers.put(XMLEvent.START_ELEMENT, (e, r) -> {
+			QName name = e.asStartElement().getName();
+			String text = null;
+			try {
+				switch (name.getLocalPart()) {
+				case "item":
+					item = new Item();
+					channel.getItemList().add(item);
+					break;
+				case "title":
+					if (item == null)
 						break;
+					text = r.getElementText();
+					item.setTitle(text);
+					break;
+				case "link":
+					if (item == null)
+						break;
+					try {
+						text = r.getElementText();
+						item.setLink(new URL(text));
+					} catch (Exception e1) {
+						e1.printStackTrace();
 					}
+					break;
+				case "description":
+					if (item == null)
+						break;
+					text = r.getElementText();
+					item.setDescription(text);
+					break;
+				case "guid":
+					if (item == null)
+						break;
+					text = r.getElementText();
+					item.setGuid(text);
+					break;
+				case "pubDate":
+					if (item == null)
+						break;
+					try {
+						text = r.getElementText();
+						item.setPubDate(Date.from(OffsetDateTime.parse(text, Constants.formatter)
+								.truncatedTo(ChronoUnit.SECONDS).toInstant()));
+					} catch (Exception ee) {
+						item.setPubDate(
+								Date.from(
+										OffsetDateTime
+												.parse(text,
+														DateTimeFormatter
+																.ofPattern(frame.getProperty("b.pubDate.format")))
+												.toInstant()));
+					}
+					break;
 				}
-				if (!exist) {
-					channel.getItemList().add(temp);
-				}
+			} catch (Exception e2) {
+				// TODO 自動生成された catch ブロック
+				e2.printStackTrace();
 			}
 		});
-		handlers.put(XMLEvent.ATTRIBUTE, (e) -> {
-		});
-		handlers.put(XMLEvent.CDATA, (e) -> {
-			if (temp == null)
-				return;
-			Characters characters = (Characters) e;
-			if (characters.isWhiteSpace())
-				return;
-
-
-			Item item = temp;
-			switch (stack.peek().getLocalPart()) {
-			case "title":
-				item.setTitle(characters.getData());
-				break;
-			case "link":
-				try {
-					item.setLink(new URL(characters.getData()));
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
-				break;
-			case "description":
-				item.setDescription(characters.getData());
-				break;
-			case "guid":
-				item.setGuid(characters.getData());
-				break;
-			case "pubDate":
-				try {
-					item.setPubDate(
-							Date.from(OffsetDateTime.parse(characters.getData(), Constants.formatter).truncatedTo(ChronoUnit.SECONDS).toInstant()));
-				} catch (Exception ee) {
-					item.setPubDate(
-							Date.from(OffsetDateTime
-									.parse(characters.getData(),
-											DateTimeFormatter.ofPattern(frame.getProperty("b.pubDate.format")))
-									.toInstant()));
-				}
-				break;
+		handlers.put(XMLEvent.END_ELEMENT, (e, r) -> {
+			QName name = e.asEndElement().getName();
+			if ("item".equals(name.getLocalPart())) {
+				item = null;
 			}
 		});
-		handlers.put(XMLEvent.CHARACTERS, (e) -> {
-			if (temp == null)
-				return;
-			Characters characters = (Characters) e;
-
-			if (characters.isWhiteSpace())
-				return;
-
-			Item item = temp;
-			switch (stack.peek().getLocalPart()) {
-			case "title":
-				item.setTitle(characters.getData());
-				break;
-			case "link":
-				try {
-					item.setLink(new URL(characters.getData()));
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
-				break;
-			case "description":
-				item.setDescription(characters.getData());
-				break;
-			case "guid":
-				item.setGuid(characters.getData());
-				break;
-			case "pubDate":
-				try {
-					item.setPubDate(
-							Date.from(OffsetDateTime.parse(characters.getData(), Constants.formatter).toInstant().truncatedTo(ChronoUnit.SECONDS)));
-				} catch (Exception ee) {
-					item.setPubDate(
-							Date.from(OffsetDateTime
-									.parse(characters.getData(),
-											DateTimeFormatter.ofPattern(frame.getProperty("b.pubDate.format")))
-									.toInstant()));
-				}
-				break;
-			}
-		});
-		handlers.put(XMLEvent.COMMENT, (e) -> {
-		});
-		handlers.put(XMLEvent.DTD, (e) -> {
-		});
-		handlers.put(XMLEvent.END_DOCUMENT, (e) -> {
+		handlers.put(XMLEvent.CHARACTERS, empty);
+		handlers.put(XMLEvent.COMMENT, empty);
+		handlers.put(XMLEvent.DTD, empty);
+		handlers.put(XMLEvent.END_DOCUMENT, (e, r) -> {
 			frame.setChannel(channel);
 		});
-		handlers.put(XMLEvent.ENTITY_DECLARATION, (e) -> {
-		});
-		handlers.put(XMLEvent.ENTITY_REFERENCE, (e) -> {
-		});
-		handlers.put(XMLEvent.NAMESPACE, (e) -> {
-		});
-		handlers.put(XMLEvent.NOTATION_DECLARATION, (e) -> {
-		});
-		handlers.put(XMLEvent.PROCESSING_INSTRUCTION, (e) -> {
-		});
-		handlers.put(XMLEvent.SPACE, (e) -> {
-		});
-		handlers.put(XMLEvent.START_DOCUMENT, (e) -> {
-		});
+		handlers.put(XMLEvent.ENTITY_DECLARATION, empty);
+		handlers.put(XMLEvent.ENTITY_REFERENCE, empty);
+		handlers.put(XMLEvent.NAMESPACE, empty);
+		handlers.put(XMLEvent.NOTATION_DECLARATION, empty);
+		handlers.put(XMLEvent.PROCESSING_INSTRUCTION, empty);
+		handlers.put(XMLEvent.SPACE, empty);
+		handlers.put(XMLEvent.START_DOCUMENT, empty);
 
 	}
 

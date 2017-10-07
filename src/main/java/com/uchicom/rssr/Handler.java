@@ -1,6 +1,7 @@
 // (c) 2017 uchicom
 package com.uchicom.rssr;
 
+import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.events.XMLEvent;
 
 /**
@@ -9,5 +10,5 @@ import javax.xml.stream.events.XMLEvent;
  */
 public interface Handler {
 
-	public void handle(XMLEvent event);
+	public void handle(XMLEvent event, XMLEventReader r);
 }
