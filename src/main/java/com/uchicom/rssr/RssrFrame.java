@@ -26,6 +26,7 @@ import javax.swing.JSplitPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 
+import com.uchicom.rssr.dto.ChannelDto;
 import com.uchicom.rssr.dto.ItemDto;
 import com.uchicom.ui.ResumeFrame;
 import com.uchicom.wjm.WJMFrame;
@@ -39,7 +40,7 @@ public class RssrFrame extends ResumeFrame {
 	private JList<ItemDto> list = new JList<>();
 	private JEditorPane editorPane = new JEditorPane();
 
-	private List<Channel> channelList = new ArrayList<>();
+	private List<ChannelDto> channelList = new ArrayList<>();
 
 	private List<RssRunnable> runnableList = new ArrayList<>();
 
@@ -168,7 +169,7 @@ public class RssrFrame extends ResumeFrame {
 		return config.getProperty(key);
 	}
 
-	public void setChannel(Channel channel) {
+	public void setChannel(ChannelDto channel) {
 		synchronized (this) {
 			ItemDto before = list.getSelectedValue();
 			if (!channelList.contains(channel)) {

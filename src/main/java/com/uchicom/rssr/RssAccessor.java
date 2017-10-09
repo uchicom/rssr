@@ -18,6 +18,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 
+import com.uchicom.rssr.dto.ChannelDto;
 import com.uchicom.rssr.dto.ItemDto;
 
 /**
@@ -26,7 +27,7 @@ import com.uchicom.rssr.dto.ItemDto;
  */
 public class RssAccessor {
 
-	private final Channel channel = new Channel();
+	private final ChannelDto channel = new ChannelDto();
 
 	private Map<Integer, Handler> handlers = new HashMap<Integer, Handler>();
 
@@ -38,7 +39,7 @@ public class RssAccessor {
 		initHandlers();
 	}
 
-	public Channel execute(URL url) throws IOException, XMLStreamException {
+	public ChannelDto execute(URL url) throws IOException, XMLStreamException {
 		XMLInputFactory factory = XMLInputFactory.newInstance();
 		XMLEventReader r = null;
 		URLConnection con = url.openConnection();

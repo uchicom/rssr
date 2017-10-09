@@ -1,16 +1,14 @@
 // (c) 2017 uchicom
-package com.uchicom.rssr;
+package com.uchicom.rssr.dto;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import com.uchicom.rssr.dto.ItemDto;
 
 /**
  * @author uchicom: Shigeki Uchiyama
  *
  */
-public class Channel {
+public class ChannelDto {
 
 	private List<ItemDto> itemList = new ArrayList<>();
 
