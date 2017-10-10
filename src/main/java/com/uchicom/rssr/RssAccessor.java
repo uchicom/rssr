@@ -27,7 +27,7 @@ import com.uchicom.rssr.dto.ItemDto;
  */
 public class RssAccessor {
 
-	private final ChannelDto channel = new ChannelDto();
+	private ChannelDto channel;
 
 	private Map<Integer, Handler> handlers = new HashMap<Integer, Handler>();
 
@@ -40,6 +40,7 @@ public class RssAccessor {
 	}
 
 	public ChannelDto execute(URL url) throws IOException, XMLStreamException {
+		channel = new ChannelDto();
 		XMLInputFactory factory = XMLInputFactory.newInstance();
 		XMLEventReader r = null;
 		URLConnection con = url.openConnection();
