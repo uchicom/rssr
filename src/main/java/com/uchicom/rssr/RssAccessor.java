@@ -40,7 +40,7 @@ public class RssAccessor {
 	}
 
 	public ChannelDto execute(URL url) throws IOException, XMLStreamException {
-		channel = new ChannelDto();
+		channel = new ChannelDto(url);
 		XMLInputFactory factory = XMLInputFactory.newInstance();
 		XMLEventReader r = null;
 		URLConnection con = url.openConnection();
