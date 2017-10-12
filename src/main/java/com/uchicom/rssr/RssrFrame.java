@@ -171,12 +171,22 @@ public class RssrFrame extends ResumeFrame {
 
 	public void setChannel(ChannelDto channel) {
 		synchronized (this) {
+			List<ItemDto> tempList = new ArrayList<>();
 			ItemDto before = list.getSelectedValue();
 			if (!channelList.contains(channel)) {
 				channelList.add(channel);
+			} else {
+				channelList.forEach((c)->{
+					if (c.equals(channel)) {
+						channel.getItemList().forEach((item)->{
+							if (!c.getItemList().contains(item)) {
+								c.getItemList().add(item);
+							}
+						});
+					}
+				});
 			}
 
-			List<ItemDto> tempList = new ArrayList<>();
 			channelList.forEach((c)-> {
 				c.getItemList().forEach((item) -> {
 					tempList.add(item);
