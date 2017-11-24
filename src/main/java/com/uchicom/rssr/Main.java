@@ -13,7 +13,7 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		SwingUtilities.invokeLater(()-> {
+		SwingUtilities.invokeLater(() -> {
 			RssrFrame frame = new RssrFrame();
 			frame.setVisible(true);
 		});

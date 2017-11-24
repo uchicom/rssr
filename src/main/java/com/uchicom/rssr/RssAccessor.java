@@ -42,19 +42,19 @@ public class RssAccessor {
 	public ChannelDto execute(URL url) throws IOException, XMLStreamException {
 		channel = new ChannelDto(url);
 		XMLInputFactory factory = XMLInputFactory.newInstance();
-		XMLEventReader r = null;
 		URLConnection con = url.openConnection();
 		// con.setRequestProperty("Accept-Encoding", "gzip,deflate,sdch");
 		con.setRequestProperty("Accept-Charset", "UTF-8,*;q=0.5");
 		con.setRequestProperty("Accept-Language", "ja,en-US;q=0.8,en;q=0.6");
 		con.setRequestProperty("User-Agent", "RSSR/1.0.1");
-		InputStream is = con.getInputStream();
-		r = factory.createXMLEventReader(is, "utf-8");
-		while (r.hasNext()) {
-			XMLEvent e = r.nextEvent();
-			handlers.get(e.getEventType()).handle(e, r);
+
+		try (InputStream is = con.getInputStream()) {
+			XMLEventReader r = factory.createXMLEventReader(is, "utf-8");
+			while (r.hasNext()) {
+				XMLEvent e = r.nextEvent();
+				handlers.get(e.getEventType()).handle(e, r);
+			}
 		}
-		is.close();
 		return channel;
 	}
 
@@ -108,7 +108,8 @@ public class RssAccessor {
 					try {
 						text = r.getElementText();
 						itemDto.setPubDate(Date.from(OffsetDateTime.parse(text, Constants.formatter)
-								.truncatedTo(ChronoUnit.SECONDS).toInstant()));
+								.truncatedTo(ChronoUnit.SECONDS)
+								.toInstant()));
 					} catch (Exception ee) {
 						itemDto.setPubDate(Date.from(OffsetDateTime.parse(text, dateFormatter).toInstant()));
 					}
