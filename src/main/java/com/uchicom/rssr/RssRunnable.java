@@ -5,10 +5,10 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import javax.swing.JOptionPane;
 import javax.xml.stream.XMLStreamException;
 
 import com.uchicom.rssr.dto.ChannelDto;
+import com.uchicom.ui.util.DialogUtil;
 
 /**
  * @author uchicom: Shigeki Uchiyama
@@ -45,7 +45,7 @@ public class RssRunnable implements Runnable {
 			} catch (IOException e1) {
 				e1.printStackTrace();
 				// メッセージは表示したいな
-				JOptionPane.showMessageDialog(frame, e1.getClass().getName() + ":" + e1.getMessage());
+				DialogUtil.showMessageDialog(frame, e1.getClass().getName() + ":" + e1.getMessage());
 			}
 			try {
 				Thread.sleep(Constants.UPDATE_SPAN);
