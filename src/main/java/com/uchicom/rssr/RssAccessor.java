@@ -102,7 +102,19 @@ public class RssAccessor {
 					text = r.getElementText();
 					itemDto.setGuid(text);
 					break;
-				case "dc:date":
+				case "date":
+					if (itemDto == null || !"dc".equals(name.getPrefix())) {
+						break;
+					}
+					try {
+						text = r.getElementText();
+						itemDto.setPubDate(Date.from(OffsetDateTime.parse(text)
+								.truncatedTo(ChronoUnit.SECONDS)
+								.toInstant()));
+					} catch (Exception ee) {
+						itemDto.setPubDate(Date.from(OffsetDateTime.parse(text, dateFormatter).toInstant()));
+					}
+					break;
 				case "pubDate":
 					if (itemDto == null)
 						break;
@@ -117,7 +129,6 @@ public class RssAccessor {
 					break;
 				}
 			} catch (Exception e2) {
-				// TODO 自動生成された catch ブロック
 				e2.printStackTrace();
 			}
 		});
