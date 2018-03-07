@@ -8,3 +8,6 @@ rssのurlはテキストファイルに保存する。
 a=http://a.com
 b=http://b.com/rss
 c=http://c.com/rss
+
+pubDate
+dc:dateをpubDateに格納
