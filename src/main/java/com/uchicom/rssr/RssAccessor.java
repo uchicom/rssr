@@ -102,6 +102,7 @@ public class RssAccessor {
 					text = r.getElementText();
 					itemDto.setGuid(text);
 					break;
+				case "dc:date":
 				case "pubDate":
 					if (itemDto == null)
 						break;
